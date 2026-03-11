@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <title>PacingCount</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #ffffff;
+            --accent: #00d1b2;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 { color: var(--accent); margin-bottom: 30px; }
+        
+        .timer-card {
+            background: var(--card);
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 2px solid transparent;
+            transition: 0.3s;
+        }
+        .timer-card.active {
+            border-color: var(--accent);
+            transform: scale(1.02);
+        }
+        .time-display {
+            font-size: 2.5rem;
+            font-family: monospace;
+            margin-bottom: 15px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-start { background-color: #4a4a4a; color: white; }
+        .active .btn-start { background-color: var(--accent); color: black; }
+        
+        #btnReset {
+            margin-top: 20px;
+            background-color: #ff3860;
+            color: white;
+            width: auto;
+            padding: 10px 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>PacingCount</h1>
+
+    <div id="card-0" class="timer-card">
+        <div id="display-0" class="time-display">00:00:00</div>
+        <button class="btn-start" onclick="toggleTimer(0)">Chrono 1</button>
+    </div>
+
+    <div id="card-1" class="timer-card">
+        <div id="display-1" class="time-display">00:00:00</div>
+        <button class="btn-start" onclick="toggleTimer(1)">Chrono 2</button>
+    </div>
+
+    <div id="card-2" class="timer-card">
+        <div id="display-2" class="time-display">00:00:00</div>
+        <button class="btn-start" onclick="toggleTimer(2)">Chrono 3</button>
+    </div>
+
+    <button id="btnReset" onclick="resetAll()">Tout Reset</button>
+
+    <script>
+        let times = [0, 0, 0]; // Temps en millisecondes
+        let activeTimer = null;
+        let lastTimestamp = null;
+
+        function formatTime(ms) {
+            let s = Math.floor(ms / 1000);
+            let m = Math.floor(s / 60);
+            let h = Math.floor(m / 60);
+            return [h, m % 60, s % 60]
+                .map(v => v < 10 ? "0" + v : v)
+                .join(":");
+        }
+
+        function toggleTimer(index) {
+            // Si on clique sur celui déjà actif, on le met en pause
+            if (activeTimer === index) {
+                activeTimer = null;
+            } else {
+                activeTimer = index;
+                lastTimestamp = Date.now();
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`display-${i}`).innerText = formatTime(times[i]);
+                document.getElementById(`card-${i}`).className = (activeTimer === i) ? "timer-card active" : "timer-card";
+            }
+        }
+
+        function resetAll() {
+            if(confirm("Réinitialiser les 3 chronos ?")) {
+                times = [0, 0, 0];
+                activeTimer = null;
+                updateUI();
+            }
+        }
+
+        // Boucle principale
+        setInterval(() => {
+            if (activeTimer !== null) {
+                const now = Date.now();
+                times[activeTimer] += (now - lastTimestamp);
+                lastTimestamp = now;
+                updateUI();
+            }
+        }, 100);
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
+</body>
+</html>
