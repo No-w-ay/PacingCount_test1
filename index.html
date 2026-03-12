@@ -13,107 +13,139 @@
             --text: #ffffff;
             --accent: #00d1b2;
             --danger: #ff3860;
-            --info: #209cee;
+            --nav-bg: #1a1a1a;
         }
+
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: var(--bg);
             color: var(--text);
+            margin: 0;
+            padding-bottom: 70px; /* Espace pour la barre de navigation */
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-            margin: 0;
-            min-height: 100vh;
         }
-        h1 { color: var(--accent); margin-bottom: 20px; font-weight: 300; }
-        
+
+        /* Système de pages */
+        .page {
+            display: none; /* Caché par défaut */
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            box-sizing: border-box;
+            flex-direction: column;
+            align-items: center;
+        }
+        .page.active { display: flex; }
+
+        h1 { color: var(--accent); font-weight: 300; }
+
+        /* Chronos Card */
         .timer-card {
             background: var(--card);
             width: 100%;
-            max-width: 350px;
             padding: 20px;
             border-radius: 20px;
             margin-bottom: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
             border: 2px solid transparent;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
-        .timer-card.active {
-            border-color: var(--accent);
-            transform: scale(1.03);
-            box-shadow: 0 0 20px rgba(0, 209, 178, 0.3);
-        }
-        .time-display {
-            font-size: 3rem;
-            font-family: 'Courier New', Courier, monospace;
-            margin-bottom: 15px;
-            letter-spacing: 2px;
-        }
+        .timer-card.active { border-color: var(--accent); transform: scale(1.02); }
+        .time-display { font-size: 2.8rem; font-family: monospace; margin-bottom: 10px; }
+
+        /* Boutons */
         button {
-            width: 100%;
             padding: 15px;
-            font-size: 1.1rem;
             border: none;
             border-radius: 12px;
             cursor: pointer;
             font-weight: bold;
-            transition: opacity 0.2s, transform 0.1s;
-            touch-action: manipulation;
-        }
-        button:active { transform: scale(0.98); }
-
-        .btn-start { background-color: #363636; color: white; }
-        .active .btn-start { background-color: var(--accent); color: #000; }
-        
-        .controls {
             width: 100%;
-            max-width: 350px;
+        }
+        .btn-start { background: #363636; color: white; }
+        .active .btn-start { background: var(--accent); color: black; }
+        .btn-reset { background: var(--danger); color: white; margin-top: 20px; }
+
+        /* Liste des résultats */
+        .res-item {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Barre de navigation basse */
+        nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: var(--nav-bg);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid #333;
+            z-index: 100;
+        }
+        nav button {
+            background: none;
+            color: #888;
+            width: auto;
+            font-size: 0.9rem;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin-top: 10px;
+            align-items: center;
         }
-        .btn-export { background-color: var(--info); color: white; }
-        .btn-reset { background-color: var(--danger); color: white; }
+        nav button.active { color: var(--accent); }
 
-        #save-indicator {
-            margin-top: 15px;
-            font-size: 0.8rem;
-            color: #666;
-            height: 1rem;
-            transition: opacity 0.5s;
-        }
+        #save-indicator { font-size: 0.7rem; color: #555; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>PacingCount</h1>
+    <main id="page-chronos" class="page active">
+        <h1>Chronos</h1>
+        <div id="card-0" class="timer-card">
+            <div id="display-0" class="time-display">00:00:00</div>
+            <button class="btn-start" onclick="toggleTimer(0)">Chrono 1</button>
+        </div>
+        <div id="card-1" class="timer-card">
+            <div id="display-1" class="time-display">00:00:00</div>
+            <button class="btn-start" onclick="toggleTimer(1)">Chrono 2</button>
+        </div>
+        <div id="card-2" class="timer-card">
+            <div id="display-2" class="time-display">00:00:00</div>
+            <button class="btn-start" onclick="toggleTimer(2)">Chrono 3</button>
+        </div>
+        <div id="save-indicator"></div>
+    </main>
 
-    <div id="card-0" class="timer-card">
-        <div id="display-0" class="time-display">00:00:00</div>
-        <button class="btn-start" onclick="toggleTimer(0)">Chrono 1</button>
-    </div>
-
-    <div id="card-1" class="timer-card">
-        <div id="display-1" class="time-display">00:00:00</div>
-        <button class="btn-start" onclick="toggleTimer(1)">Chrono 2</button>
-    </div>
-
-    <div id="card-2" class="timer-card">
-        <div id="display-2" class="time-display">00:00:00</div>
-        <button class="btn-start" onclick="toggleTimer(2)">Chrono 3</button>
-    </div>
-
-    <div class="controls">
-        <button class="btn-export" onclick="exportTimes()">Partager les résultats</button>
+    <main id="page-resultats" class="page">
+        <h1>Résultats</h1>
+        <div id="results-list" style="width:100%"></div>
+        <button onclick="exportTimes()" style="background:var(--accent); color:black; margin-top:20px;">Partager</button>
         <button class="btn-reset" onclick="resetAll()">Réinitialiser tout</button>
-    </div>
+    </main>
 
-    <div id="save-indicator"></div>
+    <main id="page-reglages" class="page">
+        <h1>Réglages</h1>
+        <p>Les fonctionnalités de réglages arriveront bientôt.</p>
+        <div style="background:var(--card); padding:20px; border-radius:15px; width:100%;">
+            <label>Mode sombre : Activé</label>
+        </div>
+    </main>
+
+    <nav>
+        <button onclick="showPage('chronos')" id="nav-chronos" class="active">⏱<br>Chronos</button>
+        <button onclick="showPage('resultats')" id="nav-resultats">📊<br>Résultats</button>
+        <button onclick="showPage('reglages')" id="nav-reglages">⚙️<br>Réglages</button>
+    </nav>
 
     <script>
         let times = JSON.parse(localStorage.getItem('pacingTimes')) || [0, 0, 0];
@@ -121,8 +153,18 @@
         let lastTimestamp = null;
         let lastSaveTime = Date.now();
 
-        const indicator = document.getElementById('save-indicator');
+        // --- NAVIGATION ---
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById('page-' + pageId).classList.add('active');
+            document.getElementById('nav-' + pageId).classList.add('active');
 
+            if(pageId === 'resultats') updateResultsList();
+        }
+
+        // --- LOGIQUE CHRONO ---
         function formatTime(ms) {
             let s = Math.floor(ms / 1000);
             let m = Math.floor(s / 60);
@@ -133,68 +175,69 @@
 
         function toggleTimer(index) {
             const now = Date.now();
-            
-            // Si on change de chrono, on met à jour le temps de celui qui était actif avant de switcher
             if (activeTimer !== null) {
                 times[activeTimer] += (now - lastTimestamp);
             }
-
             if (activeTimer === index) {
-                activeTimer = null; // Pause
+                activeTimer = null;
             } else {
-                activeTimer = index; // Start nouveau
+                activeTimer = index;
                 lastTimestamp = now;
             }
-            
             saveToDisk();
             updateUI();
         }
 
         function updateUI() {
             for (let i = 0; i < 3; i++) {
-                document.getElementById(`display-${i}`).innerText = formatTime(times[i]);
-                document.getElementById(`card-${i}`).classList.toggle('active', activeTimer === i);
+                const el = document.getElementById(`display-${i}`);
+                if(el) el.innerText = formatTime(times[i]);
+                const card = document.getElementById(`card-${i}`);
+                if(card) card.classList.toggle('active', activeTimer === i);
             }
         }
 
-        function resetAll() {
-            if(confirm("Effacer définitivement les 3 chronos ?")) {
-                times = [0, 0, 0];
-                activeTimer = null;
-                saveToDisk();
-                updateUI();
-            }
-        }
-
-        function exportTimes() {
-            const texte = `PacingCount - Résultats :\n1: ${formatTime(times[0])}\n2: ${formatTime(times[1])}\n3: ${formatTime(times[2])}`;
-            if (navigator.share) {
-                navigator.share({ title: 'Mes temps PacingCount', text: texte }).catch(() => {});
-            } else {
-                alert(texte);
-            }
+        function updateResultsList() {
+            const list = document.getElementById('results-list');
+            list.innerHTML = times.map((t, i) => `
+                <div class="res-item">
+                    <span>Chrono ${i+1}</span>
+                    <strong>${formatTime(t)}</strong>
+                </div>
+            `).join('');
         }
 
         function saveToDisk() {
             localStorage.setItem('pacingTimes', JSON.stringify(times));
             lastSaveTime = Date.now();
-            indicator.innerText = "Sauvegardé sur l'appareil";
-            indicator.style.opacity = "1";
-            setTimeout(() => { indicator.style.opacity = "0"; }, 2000);
+            const ind = document.getElementById('save-indicator');
+            ind.innerText = "Sauvegardé " + new Date().toLocaleTimeString();
         }
 
-        // Boucle de rafraîchissement
+        function resetAll() {
+            if(confirm("Réinitialiser ?")) {
+                times = [0, 0, 0];
+                activeTimer = null;
+                saveToDisk();
+                updateUI();
+                updateResultsList();
+            }
+        }
+
+        function exportTimes() {
+            const texte = times.map((t,i) => `Chrono ${i+1}: ${formatTime(t)}`).join('\n');
+            if (navigator.share) navigator.share({ title: 'PacingCount', text: texte });
+            else alert(texte);
+        }
+
         setInterval(() => {
             if (activeTimer !== null) {
                 const now = Date.now();
                 const delta = now - lastTimestamp;
-                
-                // On calcule le temps réel pour l'affichage sans modifier la variable 'times' 
-                // immédiatement (on ne modifie 'times' que lors de la sauvegarde ou du toggle)
                 let currentTimeDisplay = times[activeTimer] + delta;
-                document.getElementById(`display-${activeTimer}`).innerText = formatTime(currentTimeDisplay);
+                const display = document.getElementById(`display-${activeTimer}`);
+                if(display) display.innerText = formatTime(currentTimeDisplay);
 
-                // Sauvegarde automatique toutes les 30 secondes
                 if (now - lastSaveTime >= 30000) {
                     times[activeTimer] += (now - lastTimestamp);
                     lastTimestamp = now;
