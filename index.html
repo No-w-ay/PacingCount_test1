@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00d1b2">
     <title>PacingCount Pro</title>
     <style>
         :root {
@@ -11,9 +12,11 @@
             --card: #1e1e1e;
             --text: #ffffff;
             --accent: #00d1b2;
+            --danger: #ff3860;
+            --info: #209cee;
         }
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             display: flex;
@@ -21,54 +24,69 @@
             align-items: center;
             padding: 20px;
             margin: 0;
+            min-height: 100vh;
         }
-        h1 { color: var(--accent); margin-bottom: 30px; }
+        h1 { color: var(--accent); margin-bottom: 20px; font-weight: 300; }
         
         .timer-card {
             background: var(--card);
-            width: 90%;
-            max-width: 400px;
+            width: 100%;
+            max-width: 350px;
             padding: 20px;
-            border-radius: 15px;
+            border-radius: 20px;
             margin-bottom: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
             border: 2px solid transparent;
-            transition: 0.3s;
+            transition: all 0.3s ease;
         }
         .timer-card.active {
             border-color: var(--accent);
-            transform: scale(1.02);
-            box-shadow: 0 0 15px rgba(0, 209, 178, 0.2);
+            transform: scale(1.03);
+            box-shadow: 0 0 20px rgba(0, 209, 178, 0.3);
         }
         .time-display {
-            font-size: 2.5rem;
-            font-family: monospace;
+            font-size: 3rem;
+            font-family: 'Courier New', Courier, monospace;
             margin-bottom: 15px;
+            letter-spacing: 2px;
         }
         button {
             width: 100%;
             padding: 15px;
             font-size: 1.1rem;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
             font-weight: bold;
-            transition: 0.2s;
+            transition: opacity 0.2s, transform 0.1s;
+            touch-action: manipulation;
         }
-        .btn-start { background-color: #4a4a4a; color: white; }
-        .active .btn-start { background-color: var(--accent); color: black; }
+        button:active { transform: scale(0.98); }
+
+        .btn-start { background-color: #363636; color: white; }
+        .active .btn-start { background-color: var(--accent); color: #000; }
         
-        #btnReset {
-            margin-top: 20px;
-            background-color: #ff3860;
-            color: white;
-            width: auto;
-            padding: 10px 30px;
+        .controls {
+            width: 100%;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
         }
-        <button id="btnExport" onclick="exportTimes()" style="background-color: #209cee; color: white; margin-top: 10px;">Partager les résultats</button>
+        .btn-export { background-color: var(--info); color: white; }
+        .btn-reset { background-color: var(--danger); color: white; }
+
+        #save-indicator {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #666;
+            height: 1rem;
+            transition: opacity 0.5s;
+        }
     </style>
 </head>
 <body>
@@ -90,92 +108,37 @@
         <button class="btn-start" onclick="toggleTimer(2)">Chrono 3</button>
     </div>
 
-    <button id="btnReset" onclick="resetAll()">Tout Reset</button>
+    <div class="controls">
+        <button class="btn-export" onclick="exportTimes()">Partager les résultats</button>
+        <button class="btn-reset" onclick="resetAll()">Réinitialiser tout</button>
+    </div>
+
+    <div id="save-indicator"></div>
 
     <script>
-        // --- LOGIQUE DE SAUVEGARDE ---
-let times = JSON.parse(localStorage.getItem('pacingTimes')) || [0, 0, 0];
-let activeTimer = null;
-let lastTimestamp = null;
-let lastSaveTime = Date.now(); // Pour suivre le délai de 30s
+        // Initialisation
+        let times = JSON.parse(localStorage.getItem('pacingTimes')) || [0, 0, 0];
+        let activeTimer = null;
+        let lastTimestamp = null;
+        let lastSaveTime = Date.now();
 
-function formatTime(ms) {
-    let s = Math.floor(ms / 1000);
-    let m = Math.floor(s / 60);
-    let h = Math.floor(m / 60);
-    return [h, m % 60, s % 60]
-        .map(v => v < 10 ? "0" + v : v)
-        .join(":");
-}
+        const indicator = document.getElementById('save-indicator');
 
-function toggleTimer(index) {
-    if (activeTimer === index) {
-        activeTimer = null;
-    } else {
-        activeTimer = index;
-        lastTimestamp = Date.now();
-    }
-    saveToDisk(); // On sauvegarde toujours lors d'un changement d'état (pause/play)
-    updateUI();
-}
-
-function updateUI() {
-    for (let i = 0; i < 3; i++) {
-        document.getElementById(`display-${i}`).innerText = formatTime(times[i]);
-        document.getElementById(`card-${i}`).className = (activeTimer === i) ? "timer-card active" : "timer-card";
-    }
-}
-
-function resetAll() {
-    if(confirm("Réinitialiser les 3 chronos ?")) {
-        times = [0, 0, 0];
-        activeTimer = null;
-        saveToDisk();
-        updateUI();
-    }
-}
-
-// --- NOUVELLE FONCTION D'EXPORT ---
-function exportTimes() {
-    const texte = `PacingCount - Résultats :\nChrono 1: ${formatTime(times[0])}\nChrono 2: ${formatTime(times[1])}\nChrono 3: ${formatTime(times[2])}`;
-    
-    if (navigator.share) {
-        navigator.share({
-            title: 'Mes temps PacingCount',
-            text: texte
-        }).catch(console.error);
-    } else {
-        // Fallback si le partage natif n'est pas dispo
-        alert(texte);
-    }
-}
-
-function saveToDisk() {
-    localStorage.setItem('pacingTimes', JSON.stringify(times));
-    lastSaveTime = Date.now();
-    console.log("Sauvegarde effectuée sur le disque.");
-}
-
-// Boucle principale
-setInterval(() => {
-    if (activeTimer !== null) {
-        const now = Date.now();
-        times[activeTimer] += (now - lastTimestamp);
-        lastTimestamp = now;
-        updateUI();
-        
-        // Sauvegarde automatique toutes les 30 secondes (30000 ms)
-        if (now - lastSaveTime >= 30000) {
-            saveToDisk();
+        function formatTime(ms) {
+            let s = Math.floor(ms / 1000);
+            let m = Math.floor(s / 60);
+            let h = Math.floor(m / 60);
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${pad(h)}:${pad(m % 60)}:${pad(s % 60)}`;
         }
-    }
-}, 100);
 
-updateUI();
-
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js');
-}
-    </script>
-</body>
-</html>
+        function toggleTimer(index) {
+            if (activeTimer === index) {
+                activeTimer = null;
+            } else {
+                activeTimer = index;
+                lastTimestamp = Date.now();
+            }
+            saveToDisk(); // Sauvegarde immédiate au clic
+            updateUI();
+        }
