@@ -68,6 +68,7 @@
             width: auto;
             padding: 10px 30px;
         }
+        <button id="btnExport" onclick="exportTimes()" style="background-color: #209cee; color: white; margin-top: 10px;">Partager les résultats</button>
     </style>
 </head>
 <body>
@@ -93,73 +94,88 @@
 
     <script>
         // --- LOGIQUE DE SAUVEGARDE ---
-        // On récupère les temps sauvegardés ou on met [0,0,0]
-        let times = JSON.parse(localStorage.getItem('pacingTimes')) || [0, 0, 0];
-        let activeTimer = null;
-        let lastTimestamp = null;
+let times = JSON.parse(localStorage.getItem('pacingTimes')) || [0, 0, 0];
+let activeTimer = null;
+let lastTimestamp = null;
+let lastSaveTime = Date.now(); // Pour suivre le délai de 30s
 
-        function formatTime(ms) {
-            let s = Math.floor(ms / 1000);
-            let m = Math.floor(s / 60);
-            let h = Math.floor(m / 60);
-            return [h, m % 60, s % 60]
-                .map(v => v < 10 ? "0" + v : v)
-                .join(":");
-        }
+function formatTime(ms) {
+    let s = Math.floor(ms / 1000);
+    let m = Math.floor(s / 60);
+    let h = Math.floor(m / 60);
+    return [h, m % 60, s % 60]
+        .map(v => v < 10 ? "0" + v : v)
+        .join(":");
+}
 
-        function toggleTimer(index) {
-            if (activeTimer === index) {
-                activeTimer = null;
-            } else {
-                activeTimer = index;
-                lastTimestamp = Date.now();
-            }
-            // On sauvegarde dès qu'on change d'état
-            saveToDisk();
-            updateUI();
-        }
+function toggleTimer(index) {
+    if (activeTimer === index) {
+        activeTimer = null;
+    } else {
+        activeTimer = index;
+        lastTimestamp = Date.now();
+    }
+    saveToDisk(); // On sauvegarde toujours lors d'un changement d'état (pause/play)
+    updateUI();
+}
 
-        function updateUI() {
-            for (let i = 0; i < 3; i++) {
-                document.getElementById(`display-${i}`).innerText = formatTime(times[i]);
-                document.getElementById(`card-${i}`).className = (activeTimer === i) ? "timer-card active" : "timer-card";
-            }
-        }
+function updateUI() {
+    for (let i = 0; i < 3; i++) {
+        document.getElementById(`display-${i}`).innerText = formatTime(times[i]);
+        document.getElementById(`card-${i}`).className = (activeTimer === i) ? "timer-card active" : "timer-card";
+    }
+}
 
-        function resetAll() {
-            if(confirm("Réinitialiser les 3 chronos ?")) {
-                times = [0, 0, 0];
-                activeTimer = null;
-                saveToDisk();
-                updateUI();
-            }
-        }
-
-        function saveToDisk() {
-            localStorage.setItem('pacingTimes', JSON.stringify(times));
-        }
-
-        // Boucle principale
-        setInterval(() => {
-            if (activeTimer !== null) {
-                const now = Date.now();
-                times[activeTimer] += (now - lastTimestamp);
-                lastTimestamp = now;
-                updateUI();
-                
-                // On sauvegarde toutes les secondes environ pour ne pas surcharger
-                if(Math.floor(now/1000) !== Math.floor((now - 100)/1000)) {
-                    saveToDisk();
-                }
-            }
-        }, 100);
-
-        // Affichage initial
+function resetAll() {
+    if(confirm("Réinitialiser les 3 chronos ?")) {
+        times = [0, 0, 0];
+        activeTimer = null;
+        saveToDisk();
         updateUI();
+    }
+}
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js');
+// --- NOUVELLE FONCTION D'EXPORT ---
+function exportTimes() {
+    const texte = `PacingCount - Résultats :\nChrono 1: ${formatTime(times[0])}\nChrono 2: ${formatTime(times[1])}\nChrono 3: ${formatTime(times[2])}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Mes temps PacingCount',
+            text: texte
+        }).catch(console.error);
+    } else {
+        // Fallback si le partage natif n'est pas dispo
+        alert(texte);
+    }
+}
+
+function saveToDisk() {
+    localStorage.setItem('pacingTimes', JSON.stringify(times));
+    lastSaveTime = Date.now();
+    console.log("Sauvegarde effectuée sur le disque.");
+}
+
+// Boucle principale
+setInterval(() => {
+    if (activeTimer !== null) {
+        const now = Date.now();
+        times[activeTimer] += (now - lastTimestamp);
+        lastTimestamp = now;
+        updateUI();
+        
+        // Sauvegarde automatique toutes les 30 secondes (30000 ms)
+        if (now - lastSaveTime >= 30000) {
+            saveToDisk();
         }
+    }
+}, 100);
+
+updateUI();
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js');
+}
     </script>
 </body>
 </html>
