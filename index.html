@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="manifest.json">
-    <title>PacingCount</title>
+    <title>PacingCount Pro</title>
     <style>
         :root {
             --bg: #121212;
@@ -41,6 +41,7 @@
         .timer-card.active {
             border-color: var(--accent);
             transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(0, 209, 178, 0.2);
         }
         .time-display {
             font-size: 2.5rem;
@@ -91,7 +92,9 @@
     <button id="btnReset" onclick="resetAll()">Tout Reset</button>
 
     <script>
-        let times = [0, 0, 0]; // Temps en millisecondes
+        // --- LOGIQUE DE SAUVEGARDE ---
+        // On récupère les temps sauvegardés ou on met [0,0,0]
+        let times = JSON.parse(localStorage.getItem('pacingTimes')) || [0, 0, 0];
         let activeTimer = null;
         let lastTimestamp = null;
 
@@ -105,13 +108,14 @@
         }
 
         function toggleTimer(index) {
-            // Si on clique sur celui déjà actif, on le met en pause
             if (activeTimer === index) {
                 activeTimer = null;
             } else {
                 activeTimer = index;
                 lastTimestamp = Date.now();
             }
+            // On sauvegarde dès qu'on change d'état
+            saveToDisk();
             updateUI();
         }
 
@@ -126,8 +130,13 @@
             if(confirm("Réinitialiser les 3 chronos ?")) {
                 times = [0, 0, 0];
                 activeTimer = null;
+                saveToDisk();
                 updateUI();
             }
+        }
+
+        function saveToDisk() {
+            localStorage.setItem('pacingTimes', JSON.stringify(times));
         }
 
         // Boucle principale
@@ -137,8 +146,16 @@
                 times[activeTimer] += (now - lastTimestamp);
                 lastTimestamp = now;
                 updateUI();
+                
+                // On sauvegarde toutes les secondes environ pour ne pas surcharger
+                if(Math.floor(now/1000) !== Math.floor((now - 100)/1000)) {
+                    saveToDisk();
+                }
             }
         }, 100);
+
+        // Affichage initial
+        updateUI();
 
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js');
