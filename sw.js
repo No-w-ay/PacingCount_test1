@@ -1,4 +1,4 @@
-const cacheName = 'pacingcount-v1';
+const cacheName = 'pacingcount_test1-v1';
 const assets = [
   './',
   './index.html',
