@@ -1,8 +1,8 @@
 {
-  "name": "PacingCount",
-  "short_name": "Pacing",
-  "start_url": "/pacingcount/",
-  "scope": "/pacingcount/",
+  "name": "PacingCount_test1",
+  "short_name": "Pacing_t1",
+  "start_url": "/pacingcount_test1/",
+  "scope": "/pacingcount_test1/",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#00d1b2",
