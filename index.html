@@ -116,7 +116,6 @@
     <div id="save-indicator"></div>
 
     <script>
-        // Initialisation
         let times = JSON.parse(localStorage.getItem('pacingTimes')) || [0, 0, 0];
         let activeTimer = null;
         let lastTimestamp = null;
@@ -133,12 +132,82 @@
         }
 
         function toggleTimer(index) {
-            if (activeTimer === index) {
-                activeTimer = null;
-            } else {
-                activeTimer = index;
-                lastTimestamp = Date.now();
+            const now = Date.now();
+            
+            // Si on change de chrono, on met à jour le temps de celui qui était actif avant de switcher
+            if (activeTimer !== null) {
+                times[activeTimer] += (now - lastTimestamp);
             }
-            saveToDisk(); // Sauvegarde immédiate au clic
+
+            if (activeTimer === index) {
+                activeTimer = null; // Pause
+            } else {
+                activeTimer = index; // Start nouveau
+                lastTimestamp = now;
+            }
+            
+            saveToDisk();
             updateUI();
         }
+
+        function updateUI() {
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`display-${i}`).innerText = formatTime(times[i]);
+                document.getElementById(`card-${i}`).classList.toggle('active', activeTimer === i);
+            }
+        }
+
+        function resetAll() {
+            if(confirm("Effacer définitivement les 3 chronos ?")) {
+                times = [0, 0, 0];
+                activeTimer = null;
+                saveToDisk();
+                updateUI();
+            }
+        }
+
+        function exportTimes() {
+            const texte = `PacingCount - Résultats :\n1: ${formatTime(times[0])}\n2: ${formatTime(times[1])}\n3: ${formatTime(times[2])}`;
+            if (navigator.share) {
+                navigator.share({ title: 'Mes temps PacingCount', text: texte }).catch(() => {});
+            } else {
+                alert(texte);
+            }
+        }
+
+        function saveToDisk() {
+            localStorage.setItem('pacingTimes', JSON.stringify(times));
+            lastSaveTime = Date.now();
+            indicator.innerText = "Sauvegardé sur l'appareil";
+            indicator.style.opacity = "1";
+            setTimeout(() => { indicator.style.opacity = "0"; }, 2000);
+        }
+
+        // Boucle de rafraîchissement
+        setInterval(() => {
+            if (activeTimer !== null) {
+                const now = Date.now();
+                const delta = now - lastTimestamp;
+                
+                // On calcule le temps réel pour l'affichage sans modifier la variable 'times' 
+                // immédiatement (on ne modifie 'times' que lors de la sauvegarde ou du toggle)
+                let currentTimeDisplay = times[activeTimer] + delta;
+                document.getElementById(`display-${activeTimer}`).innerText = formatTime(currentTimeDisplay);
+
+                // Sauvegarde automatique toutes les 30 secondes
+                if (now - lastSaveTime >= 30000) {
+                    times[activeTimer] += (now - lastTimestamp);
+                    lastTimestamp = now;
+                    saveToDisk();
+                }
+            }
+        }, 100);
+
+        updateUI();
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
+</body>
+</html>
